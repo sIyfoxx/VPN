@@ -2,18 +2,36 @@ package com.example.vpn.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Основные пастельные цвета
-val PastelBackground = Color(0xFFF8F9FA)      // мягкий белый
-val PastelSurface = Color(0xFFFFFFFF)          // чистый белый для карточек
-val PastelPrimary = Color(0xFFA9D6E5)          // нежно-голубой
-val PastelPrimaryDark = Color(0xFF7FB4C7)      // чуть насыщеннее
-val PastelSecondary = Color(0xFFE9C46A)        // мягкий золотистый
-val PastelSuccess = Color(0xFFA7C5A1)          // пастельный зелёный
-val PastelError = Color(0xFFE9A6A6)            // пастельный красный
-val PastelWarning = Color(0xFFFFD966)          // мягкий жёлтый
-val PastelTextPrimary = Color(0xFF2D3E50)      // тёмно-синий для текста
-val PastelTextSecondary = Color(0xFF8B9EB0)    // серо-голубой для подписей
-val PastelDivider = Color(0xFFE8EDF2)          // очень светлый серый
-val PastelCardShadow = Color(0xFFD9E2E8)       // тень для карточек
-val PastelGradientStart = Color(0xFFE0F3FA)    // градиент старт
-val PastelGradientEnd = Color(0xFFF5F9FF)      // градиент энд
+// Panda VPN тёмная палитра
+val PandaBlack = Color(0xFF0A0A0A)           // глубокий чёрный
+val PandaDark = Color(0xFF1A1A1A)            // тёмный серый
+val PandaGray = Color(0xFF2D2D2D)            // серый для карточек
+val PandaLightGray = Color(0xFF3D3D3D)       // светлый серый для границ
+
+// Бамбуковая гамма (пастельные акценты)
+val BambooGreen = Color(0xFF6A9C78)          // мягкий бамбуковый зелёный
+val BambooLight = Color(0xFF8DBF7A)          // светлый бамбук
+val BambooPale = Color(0xFFB8CF9F)           // бледный бамбук
+val BambooCream = Color(0xFFE8E0C5)          // кремовый для текста
+
+// Акценты
+val BambooGold = Color(0xFFE6B87E)           // тёплый золотой
+val BambooRed = Color(0xFFE09D8C)            // мягкий красный
+val BambooSuccess = Color(0xFF7CB57C)        // зелёный успех
+val BambooError = Color(0xFFE09D8C)          // красный ошибка
+
+// Фоны (тёмные)
+val BackgroundDark = PandaBlack
+val BackgroundCard = PandaDark
+val SurfaceDark = PandaGray
+
+// Текст (светлый)
+val TextPrimaryDark = BambooCream
+val TextSecondaryDark = Color(0xFFB0B0B0)
+val TextHintDark = Color(0xFF6A6A6A)
+
+// Градиенты
+val DarkGradientStart = PandaBlack
+val DarkGradientEnd = Color(0xFF2A2A2A)
+val BambooGradientStart = BambooGreen
+val BambooGradientEnd = BambooLight

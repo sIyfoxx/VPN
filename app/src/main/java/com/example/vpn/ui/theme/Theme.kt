@@ -5,37 +5,37 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
-
+import androidx.compose.ui.graphics.Color.Companion.White
 private val DarkColorScheme = darkColorScheme(
-    primary = PastelPrimary,
-    secondary = PastelSecondary,
-    tertiary = PastelSuccess,
-    background = PastelBackground,
-    surface = PastelSurface,
-    error = PastelError,
-    onPrimary = PastelTextPrimary,
-    onSecondary = PastelTextPrimary,
-    onBackground = PastelTextPrimary,
-    onSurface = PastelTextPrimary,
+    primary = BambooGreen,
+    secondary = BambooGold,
+    tertiary = BambooLight,
+    background = BackgroundDark,
+    surface = SurfaceDark,
+    error = BambooError,
+    onPrimary = TextPrimaryDark,
+    onSecondary = TextPrimaryDark,
+    onBackground = TextPrimaryDark,
+    onSurface = TextPrimaryDark
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = PastelPrimary,
-    secondary = PastelSecondary,
-    tertiary = PastelSuccess,
-    background = PastelBackground,
-    surface = PastelSurface,
-    error = PastelError,
-    onPrimary = PastelTextPrimary,
-    onSecondary = PastelTextPrimary,
-    onBackground = PastelTextPrimary,
-    onSurface = PastelTextPrimary,
+    primary = BambooGreen,
+    secondary = BambooGold,
+    tertiary = BambooLight,
+    background = BambooCream,
+    surface = White,
+    error = BambooError,
+    onPrimary = PandaBlack,
+    onSecondary = PandaBlack,
+    onBackground = PandaBlack,
+    onSurface = PandaBlack
 )
 
 @Composable
-fun VPNClientTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
-    dynamicColor: Boolean = true,
+fun PandaVPNTheme(
+    darkTheme: Boolean = true,  // ← по умолчанию тёмная тема
+    dynamicColor: Boolean = false,  // отключаем dynamic color для тёмной
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {
@@ -49,7 +49,7 @@ fun VPNClientTheme(
 
     MaterialTheme(
         colorScheme = colorScheme,
-        typography = Typography,
+        typography = PandaTypography,
         content = content
     )
 }
