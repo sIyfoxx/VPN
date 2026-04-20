@@ -1,9 +1,9 @@
 package com.example.vpn.ui.screens.home
 
 import androidx.compose.animation.core.*
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -13,62 +13,60 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.*
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.vpn.ui.theme.*
+import com.example.vpn.domain.models.VpnServer
+import com.example.vpn.domain.models.ConnectionState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen() {
-    var isConnected by remember { mutableStateOf(false) }
-    var selectedServer by remember { mutableStateOf("Netherlands") }
-    var selectedFlag by remember { mutableStateOf("🇳🇱") }
-
-    val connectionStatus = if (isConnected) "Connected" else "Disconnected"
-    val statusColor = if (isConnected) PastelSuccess else PastelError
-    val buttonGradient = if (isConnected)
-        Brush.horizontalGradient(listOf(PastelError, PastelError.copy(alpha = 0.8f)))
-    else
-        Brush.horizontalGradient(listOf(PastelPrimary, PastelPrimaryDark))
+fun HomeScreen(
+    viewModel: HomeViewModel = viewModel()
+) {
+    val uiState = viewModel.uiState.collectAsState().value
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
-                    Text(
-                        "VPN Shield",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = PastelTextPrimary
-                    )
-                },
-                actions = {
-                    IconButton(onClick = { /* TODO */ }) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
                         Icon(
-                            Icons.Default.Settings,
-                            contentDescription = "Settings",
-                            tint = PastelTextSecondary
+                            imageVector = Icons.Default.Person,
+                            contentDescription = "Panda",
+                            tint = BambooGreen,
+                            modifier = Modifier.size(28.dp)
+                        )
+                        Text(
+                            text = "Panda VPN",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = BambooGreen
                         )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Color.Transparent,
-                    scrolledContainerColor = PastelBackground
+                    scrolledContainerColor = BackgroundDark
                 )
             )
         },
-        containerColor = PastelBackground
+        containerColor = BackgroundDark
     ) { paddingValues ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(
                     brush = Brush.verticalGradient(
-                        colors = listOf(PastelGradientStart, PastelGradientEnd)
+                        colors = listOf(BackgroundDark, DarkGradientEnd)
                     )
                 )
                 .padding(paddingValues)
@@ -79,85 +77,72 @@ fun HomeScreen() {
                     .padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Анимированная кнопка подключения
-                AnimatedConnectButton(
-                    isConnected = isConnected,
-                    statusColor = statusColor,
-                    buttonGradient = buttonGradient,
-                    onClick = { isConnected = !isConnected }
+                // Кнопка подключения
+                PandaConnectButton(
+                    isConnected = uiState.isConnected,
+                    isConnecting = uiState.isConnecting,
+                    onClick = { viewModel.toggleConnection() }
                 )
 
-                Spacer(modifier = Modifier.height(32.dp))
+                Spacer(modifier = Modifier.height(24.dp))
 
-                // Статус
-                Text(
-                    text = connectionStatus,
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = statusColor,
-                    letterSpacing = 0.5.sp
+                // Статус подключения
+                ConnectionStatusCard(
+                    connectionState = uiState.connectionState,
+                    currentServer = uiState.currentServer,
+                    sessionTime = uiState.sessionTime
                 )
 
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Text(
-                    text = if (isConnected) "Your connection is secure" else "Tap to connect",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = PastelTextSecondary
-                )
-
-                Spacer(modifier = Modifier.height(48.dp))
-
-                // Карточка выбора сервера
-                ServerSelectionCard(
-                    selectedServer = selectedServer,
-                    selectedFlag = selectedFlag,
-                    onServerClick = {
-                        // TODO: диалог выбора сервера
-                    }
-                )
-
-                Spacer(modifier = Modifier.height(32.dp))
+                Spacer(modifier = Modifier.height(24.dp))
 
                 // Статистика
-                StatisticsCard()
+                PandaStatsCard(
+                    todayDownload = uiState.stats.todayDownloadFormatted,
+                    todayUpload = uiState.stats.todayUploadFormatted,
+                    totalTraffic = uiState.stats.totalAllFormatted
+                )
 
-                Spacer(modifier = Modifier.height(32.dp))
+                Spacer(modifier = Modifier.height(24.dp))
 
-                // Преимущества
-                FeaturesRow()
+                // Выбор сервера
+                ServerSelectionSection(
+                    currentServer = uiState.currentServer,
+                    servers = uiState.servers,
+                    onServerSelected = { viewModel.selectServer(it) }
+                )
             }
         }
     }
 }
 
 @Composable
-fun AnimatedConnectButton(
+fun PandaConnectButton(
     isConnected: Boolean,
-    statusColor: Color,
-    buttonGradient: Brush,
+    isConnecting: Boolean,
     onClick: () -> Unit
 ) {
-    val infiniteTransition = rememberInfiniteTransition()
+    val infiniteTransition = rememberInfiniteTransition(label = "panda_pulse")
     val pulse by infiniteTransition.animateFloat(
         initialValue = 1f,
-        targetValue = 1.2f,
+        targetValue = 1.1f,
         animationSpec = infiniteRepeatable(
-            animation = tween(1000, easing = FastOutSlowInEasing),
+            animation = tween(800, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
-        )
+        ),
+        label = "pulse"
     )
 
     Box(
         modifier = Modifier
-            .size(180.dp)
+            .size(160.dp)
             .shadow(
                 elevation = if (isConnected) 20.dp else 12.dp,
                 shape = CircleShape,
                 clip = false,
-                spotColor = statusColor.copy(alpha = 0.3f)
+                spotColor = if (isConnected) BambooSuccess else BambooGreen,
+                ambientColor = if (isConnected) BambooSuccess else BambooGreen
             )
-            .scale(if (isConnected) pulse else 1f)
+            .scale(if (isConnected || isConnecting) pulse else 1f)
     ) {
         FloatingActionButton(
             onClick = onClick,
@@ -169,110 +154,165 @@ fun AnimatedConnectButton(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(
-                        brush = buttonGradient,
+                        brush = Brush.radialGradient(
+                            colors = listOf(
+                                if (isConnected) BambooSuccess else BambooGreen,
+                                if (isConnected) BambooSuccess.copy(alpha = 0.7f) else BambooGreen.copy(alpha = 0.7f)
+                            ),
+                            center = Offset(0.3f, 0.3f),
+                            radius = 0.8f
+                        ),
                         shape = CircleShape
                     ),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    imageVector = if (isConnected) Icons.Default.Lock else Icons.Default.Favorite,
-                    contentDescription = if (isConnected) "Disconnect" else "Connect",
-                    tint = Color.White,
-                    modifier = Modifier.size(64.dp)
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun ServerSelectionCard(
-    selectedServer: String,
-    selectedFlag: String,
-    onServerClick: () -> Unit
-) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onServerClick() },
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = PastelSurface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(20.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Text(
-                    text = selectedFlag,
-                    fontSize = 32.sp
-                )
-                Column {
-                    Text(
-                        text = selectedServer,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        color = PastelTextPrimary
+                if (isConnecting) {
+                    CircularProgressIndicator(
+                        color = TextPrimaryDark,
+                        modifier = Modifier.size(48.dp),
+                        strokeWidth = 3.dp
                     )
-                    Text(
-                        text = "Best latency • 23 ms",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = PastelTextSecondary
-                    )
+                } else {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(
+                            imageVector = if (isConnected) Icons.Default.Lock else Icons.Default.Lock,
+                            contentDescription = if (isConnected) "Disconnect" else "Connect",
+                            tint = TextPrimaryDark,
+                            modifier = Modifier.size(48.dp)
+                        )
+                        Text(
+                            text = if (isConnected) "DISCONNECT" else "CONNECT",
+                            color = TextPrimaryDark,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 1.sp
+                        )
+                    }
                 }
             }
-            Icon(
-                imageVector = Icons.Default.KeyboardArrowRight,
-                contentDescription = "Change server",
-                tint = PastelTextSecondary
-            )
         }
     }
 }
 
 @Composable
-fun StatisticsCard() {
+fun ConnectionStatusCard(
+    connectionState: ConnectionState,
+    currentServer: VpnServer,
+    sessionTime: String?
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = PastelSurface),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = BackgroundCard
+        ),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Column(
             modifier = Modifier.padding(20.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(
-                text = "Today's Usage",
-                style = MaterialTheme.typography.titleSmall,
-                color = PastelTextSecondary
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.FavoriteBorder,
+                    contentDescription = "Status",
+                    tint = if (connectionState.isConnected) BambooSuccess else BambooGold,
+                    modifier = Modifier.size(32.dp)
+                )
+                Column {
+                    Text(
+                        text = connectionState.displayText,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = if (connectionState.isConnected) BambooSuccess else BambooGold
+                    )
+                    if (connectionState.isConnected && sessionTime != null) {
+                        Text(
+                            text = "Session: $sessionTime",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = TextSecondaryDark
+                        )
+                    }
+                }
+            }
+
             Spacer(modifier = Modifier.height(16.dp))
+
+            Divider(color = PandaGray)
+
+            Spacer(modifier = Modifier.height(16.dp))
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                StatItem(
-                    icon = Icons.Default.Add,
-                    value = "128 MB",
-                    label = "Download"
+                Text(
+                    text = "🐼 Current Server",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = TextSecondaryDark
                 )
-                StatItem(
-                    icon = Icons.Default.ThumbUp,
-                    value = "45 MB",
-                    label = "Upload"
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = currentServer.flag,
+                        fontSize = 20.sp
+                    )
+                    Text(
+                        text = currentServer.displayName,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium,
+                        color = BambooGreen
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = "🎋 Latency",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = TextSecondaryDark
                 )
-                StatItem(
-                    icon = Icons.Default.Build,
-                    value = "1h 23m",
-                    label = "Session"
+                Text(
+                    text = if (currentServer.latency > 0) "${currentServer.latency} ms" else "—",
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "🎍 Load",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = TextSecondaryDark
+                )
+                LinearProgressIndicator(
+                    progress = currentServer.load / 100f,
+                    modifier = Modifier
+                        .width(100.dp)
+                        .height(6.dp),
+                    color = when (currentServer.load) {
+                        in 0..30 -> BambooSuccess
+                        in 31..70 -> BambooGold
+                        else -> BambooError
+                    },
+                    trackColor = PandaGray
                 )
             }
         }
@@ -280,73 +320,181 @@ fun StatisticsCard() {
 }
 
 @Composable
-fun StatItem(icon: ImageVector, value: String, label: String) {
+fun PandaStatsCard(
+    todayDownload: String,
+    todayUpload: String,
+    totalTraffic: String
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = BackgroundCard
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "🎋 Today's Bamboo",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = BambooGreen
+                )
+                Icon(
+                    imageVector = Icons.Default.Done,
+                    contentDescription = "Leaf",
+                    tint = BambooGold,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                PandaStatItem(
+                    icon = Icons.Default.Add,
+                    value = todayDownload,
+                    label = "Download"
+                )
+                PandaStatItem(
+                    icon = Icons.Default.Done,
+                    value = todayUpload,
+                    label = "Upload"
+                )
+                PandaStatItem(
+                    icon = Icons.Default.Favorite,
+                    value = totalTraffic,
+                    label = "Total"
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun PandaStatItem(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    value: String,
+    label: String
+) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Icon(
             imageVector = icon,
             contentDescription = label,
-            tint = PastelPrimary,
-            modifier = Modifier.size(28.dp)
+            tint = BambooGold,
+            modifier = Modifier.size(24.dp)
         )
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(4.dp))
         Text(
             text = value,
-            style = MaterialTheme.typography.titleMedium,
+            style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.Bold,
-            color = PastelTextPrimary
+            color = BambooGreen
         )
         Text(
             text = label,
-            style = MaterialTheme.typography.bodySmall,
-            color = PastelTextSecondary
+            style = MaterialTheme.typography.labelSmall,
+            color = TextSecondaryDark
         )
     }
 }
 
 @Composable
-fun FeaturesRow() {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceEvenly
-    ) {
-        FeatureChip(
-            icon = Icons.Default.Lock,
-            text = "Encrypted"
-        )
-        FeatureChip(
-            icon = Icons.Default.PlayArrow,
-            text = "Fast"
-        )
-        FeatureChip(
-            icon = Icons.Default.ShoppingCart,
-            text = "Unlimited"
-        )
-    }
-}
-
-@Composable
-fun FeatureChip(icon: ImageVector, text: String) {
-    Surface(
-        shape = RoundedCornerShape(32.dp),
-        color = PastelSurface,
-        shadowElevation = 2.dp
-    ) {
+fun ServerSelectionSection(
+    currentServer: VpnServer,
+    servers: List<VpnServer>,
+    onServerSelected: (VpnServer) -> Unit
+) {
+    Column {
         Row(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = text,
-                tint = PastelPrimary,
-                modifier = Modifier.size(18.dp)
+            Text(
+                text = "🎍 Bamboo Locations",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+                color = BambooGreen
+            )
+            TextButton(onClick = { /* TODO */ }) {
+                Text("See all", color = BambooGold)
+            }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            items(servers.take(4)) { server ->
+                ServerPandaCard(
+                    server = server,
+                    isSelected = server.id == currentServer.id,
+                    onClick = { onServerSelected(server) }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun ServerPandaCard(
+    server: VpnServer,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .width(110.dp)
+            .clickable { onClick() },
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isSelected) BambooGreen.copy(alpha = 0.2f) else BackgroundCard
+        ),
+        border = if (isSelected) BorderStroke(1.dp, BambooGreen) else null,
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = server.flag,
+                fontSize = 32.sp
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = server.city,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium,
+                color = if (isSelected) BambooGreen else TextPrimaryDark,
+                maxLines = 1
             )
             Text(
-                text = text,
-                style = MaterialTheme.typography.labelMedium,
-                color = PastelTextPrimary
+                text = "${server.latency} ms",
+                style = MaterialTheme.typography.labelSmall,
+                color = TextSecondaryDark
             )
+            if (server.isRecommended) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "🎋",
+                    fontSize = 12.sp
+                )
+            }
         }
     }
 }

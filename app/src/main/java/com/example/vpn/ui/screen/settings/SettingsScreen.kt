@@ -1,6 +1,6 @@
 package com.example.vpn.ui.screens.settings
 
-import androidx.compose.foundation.background
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -9,46 +9,59 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.vpn.domain.models.AppLanguage
+import com.example.vpn.domain.models.AppTheme
+import com.example.vpn.domain.models.VpnProtocol
 import com.example.vpn.ui.theme.*
-import androidx.compose.foundation.clickable
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen() {
-    var autoConnect by remember { mutableStateOf(false) }
-    var notifications by remember { mutableStateOf(true) }
-    var selectedProtocol by remember { mutableStateOf("VLESS + Reality") }
+fun SettingsScreen(
+    viewModel: SettingsViewModel = viewModel()
+) {
+    val uiState = viewModel.uiState.collectAsState().value
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
-                    Text(
-                        "Settings",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = PastelTextPrimary
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Person,
+                            contentDescription = "Panda",
+                            tint = BambooGreen,
+                            modifier = Modifier.size(28.dp)
+                        )
+                        Text(
+                            text = "Bamboo Settings",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = BambooGreen
+                        )
+                    }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Color.Transparent,
-                    scrolledContainerColor = PastelBackground
+                    scrolledContainerColor = BackgroundDark
                 )
             )
         },
-        containerColor = PastelBackground
+        containerColor = BackgroundDark
     ) { paddingValues ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(
                     brush = Brush.verticalGradient(
-                        colors = listOf(PastelGradientStart, PastelGradientEnd)
+                        colors = listOf(BackgroundDark, DarkGradientEnd)
                     )
                 )
                 .padding(paddingValues)
@@ -59,59 +72,80 @@ fun SettingsScreen() {
                     .padding(24.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // Connection Section
-                SettingsSection(title = "Connection") {
-                    SettingsSwitchItem(
-                        icon = Icons.Default.Done,
+                PandaSettingsSection(title = "🎋 Panda Connection") {
+                    PandaSwitchItem(
+                        icon = Icons.Default.CheckCircle,
                         title = "Auto-connect",
-                        subtitle = "Connect automatically on app start",
-                        checked = autoConnect,
-                        onCheckedChange = { autoConnect = it }
+                        subtitle = "Connect automatically when panda wakes up",
+                        checked = uiState.settings.autoConnect,
+                        onCheckedChange = { viewModel.setAutoConnect(it) }
                     )
-                    SettingsSwitchItem(
+                    PandaSwitchItem(
                         icon = Icons.Default.Notifications,
-                        title = "Notifications",
-                        subtitle = "Show connection alerts",
-                        checked = notifications,
-                        onCheckedChange = { notifications = it }
+                        title = "Bamboo Alerts",
+                        subtitle = "Receive notifications about bamboo growth",
+                        checked = uiState.settings.notificationsEnabled,
+                        onCheckedChange = { viewModel.setNotificationsEnabled(it) }
+                    )
+                    PandaSwitchItem(
+                        icon = Icons.Default.FavoriteBorder,
+                        title = "Kill Switch",
+                        subtitle = "Protect panda if connection drops",
+                        checked = uiState.settings.killSwitch,
+                        onCheckedChange = { viewModel.setKillSwitch(it) }
                     )
                 }
 
-                // Protocol Section
-                SettingsSection(title = "VPN Protocol") {
-                    SettingsDropdownItem(
+                PandaSettingsSection(title = "🎋 Bamboo Protocol") {
+                    PandaDropdownItem(
                         icon = Icons.Default.Lock,
                         title = "Protocol",
-                        value = selectedProtocol,
-                        options = listOf("VLESS + Reality", "Shadowsocks", "Hysteria2", "WireGuard"),
-                        onValueSelected = { selectedProtocol = it }
+                        value = uiState.settings.selectedProtocol.displayName,
+                        options = uiState.protocols.map { it.displayName },
+                        onValueSelected = { selected ->
+                            val protocol = VpnProtocol.values().find { it.displayName == selected }
+                            protocol?.let { viewModel.setProtocol(it) }
+                        }
                     )
                 }
 
-                // Appearance Section
-                SettingsSection(title = "Appearance") {
-                    SettingsSelectItem(
-                        icon = Icons.Default.CheckCircle,
+                PandaSettingsSection(title = "🎋 Panda Look") {
+                    PandaDropdownItem(
+                        icon = Icons.Default.ShoppingCart,
                         title = "Theme",
-                        value = "System default"
+                        value = uiState.settings.theme.displayName,
+                        options = uiState.themes.map { it.displayName },
+                        onValueSelected = { selected ->
+                            val theme = AppTheme.values().find { it.displayName == selected }
+                            theme?.let { viewModel.setTheme(it) }
+                        }
+                    )
+                    PandaDropdownItem(
+                        icon = Icons.Default.LocationOn,
+                        title = "Language",
+                        value = uiState.settings.language.displayName,
+                        options = uiState.languages.map { it.displayName },
+                        onValueSelected = { selected ->
+                            val language = AppLanguage.values().find { it.displayName == selected }
+                            language?.let { viewModel.setLanguage(it) }
+                        }
                     )
                 }
 
-                // About Section
-                SettingsSection(title = "About") {
-                    SettingsInfoItem(
+                PandaSettingsSection(title = "🎋 About Panda") {
+                    PandaInfoItem(
                         icon = Icons.Default.Info,
                         title = "Version",
                         value = "1.0.0"
                     )
-                    SettingsInfoItem(
-                        icon = Icons.Default.FavoriteBorder,
+                    PandaInfoItem(
+                        icon = Icons.Default.Lock,
                         title = "Privacy Policy",
                         value = ""
                     )
-                    SettingsInfoItem(
+                    PandaInfoItem(
                         icon = Icons.Default.Favorite,
-                        title = "Rate Us",
+                        title = "Rate Bamboo VPN",
                         value = ""
                     )
                 }
@@ -121,34 +155,36 @@ fun SettingsScreen() {
 }
 
 @Composable
-fun SettingsSection(
+fun PandaSettingsSection(
     title: String,
     content: @Composable ColumnScope.() -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = PastelSurface),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = BackgroundCard
+        ),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Text(
                 text = title,
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.SemiBold,
-                color = PastelTextSecondary
+                color = BambooGreen
             )
-            Divider(color = PastelDivider)
+            Divider(color = PandaGray)
             content()
         }
     }
 }
 
 @Composable
-fun SettingsSwitchItem(
+fun PandaSwitchItem(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     title: String,
     subtitle: String,
@@ -162,7 +198,7 @@ fun SettingsSwitchItem(
         Icon(
             imageVector = icon,
             contentDescription = title,
-            tint = PastelPrimary,
+            tint = BambooGold,
             modifier = Modifier.size(24.dp)
         )
         Spacer(modifier = Modifier.width(16.dp))
@@ -171,27 +207,29 @@ fun SettingsSwitchItem(
                 text = title,
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.Medium,
-                color = PastelTextPrimary
+                color = TextPrimaryDark
             )
             Text(
                 text = subtitle,
                 style = MaterialTheme.typography.bodySmall,
-                color = PastelTextSecondary
+                color = TextSecondaryDark
             )
         }
         Switch(
             checked = checked,
             onCheckedChange = onCheckedChange,
             colors = SwitchDefaults.colors(
-                checkedThumbColor = PastelPrimary,
-                checkedTrackColor = PastelPrimary.copy(alpha = 0.5f)
+                checkedThumbColor = BambooGreen,
+                checkedTrackColor = BambooGreen.copy(alpha = 0.5f),
+                uncheckedThumbColor = PandaGray,
+                uncheckedTrackColor = PandaGray.copy(alpha = 0.5f)
             )
         )
     }
 }
 
 @Composable
-fun SettingsDropdownItem(
+fun PandaDropdownItem(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     title: String,
     value: String,
@@ -209,7 +247,7 @@ fun SettingsDropdownItem(
         Icon(
             imageVector = icon,
             contentDescription = title,
-            tint = PastelPrimary,
+            tint = BambooGold,
             modifier = Modifier.size(24.dp)
         )
         Spacer(modifier = Modifier.width(16.dp))
@@ -218,27 +256,33 @@ fun SettingsDropdownItem(
                 text = title,
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.Medium,
-                color = PastelTextPrimary
+                color = TextPrimaryDark
             )
             Text(
                 text = value,
                 style = MaterialTheme.typography.bodySmall,
-                color = PastelTextSecondary
+                color = TextSecondaryDark
             )
         }
         Icon(
             Icons.Default.KeyboardArrowDown,
             contentDescription = "Select",
-            tint = PastelTextSecondary
+            tint = BambooGold
         )
 
         DropdownMenu(
             expanded = expanded,
-            onDismissRequest = { expanded = false }
+            onDismissRequest = { expanded = false },
+            modifier = Modifier.background(BackgroundCard, RoundedCornerShape(12.dp))
         ) {
             options.forEach { option ->
                 DropdownMenuItem(
-                    text = { Text(option) },
+                    text = {
+                        Text(
+                            option,
+                            color = if (option == value) BambooGreen else TextPrimaryDark
+                        )
+                    },
                     onClick = {
                         onValueSelected(option)
                         expanded = false
@@ -250,7 +294,7 @@ fun SettingsDropdownItem(
 }
 
 @Composable
-fun SettingsSelectItem(
+fun PandaInfoItem(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     title: String,
     value: String
@@ -262,46 +306,7 @@ fun SettingsSelectItem(
         Icon(
             imageVector = icon,
             contentDescription = title,
-            tint = PastelPrimary,
-            modifier = Modifier.size(24.dp)
-        )
-        Spacer(modifier = Modifier.width(16.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Medium,
-                color = PastelTextPrimary
-            )
-        }
-        Text(
-            text = value,
-            style = MaterialTheme.typography.bodyMedium,
-            color = PastelTextSecondary
-        )
-        Spacer(modifier = Modifier.width(8.dp))
-        Icon(
-            Icons.Default.KeyboardArrowRight,
-            contentDescription = null,
-            tint = PastelTextSecondary
-        )
-    }
-}
-
-@Composable
-fun SettingsInfoItem(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    title: String,
-    value: String
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = title,
-            tint = PastelPrimary,
+            tint = BambooGold,
             modifier = Modifier.size(24.dp)
         )
         Spacer(modifier = Modifier.width(16.dp))
@@ -309,21 +314,21 @@ fun SettingsInfoItem(
             text = title,
             style = MaterialTheme.typography.bodyLarge,
             fontWeight = FontWeight.Medium,
-            color = PastelTextPrimary,
+            color = TextPrimaryDark,
             modifier = Modifier.weight(1f)
         )
         if (value.isNotEmpty()) {
             Text(
                 text = value,
                 style = MaterialTheme.typography.bodyMedium,
-                color = PastelTextSecondary
+                color = TextSecondaryDark
             )
             Spacer(modifier = Modifier.width(8.dp))
         }
         Icon(
             Icons.Default.KeyboardArrowRight,
             contentDescription = null,
-            tint = PastelTextSecondary,
+            tint = TextSecondaryDark,
             modifier = Modifier.size(20.dp)
         )
     }
